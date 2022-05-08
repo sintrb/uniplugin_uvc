@@ -1,16 +1,16 @@
 package com.sintrb.uniplugin.uvc;
 
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.Rect;
 import android.hardware.usb.UsbDevice;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -41,15 +41,16 @@ import io.dcloud.feature.uniapp.ui.component.AbsVContainer;
 import io.dcloud.feature.uniapp.ui.component.UniComponent;
 import io.dcloud.feature.uniapp.ui.component.UniComponentProp;
 
-public class IUVCViewer extends UniComponent<RelativeLayout> {
+public class IUVCViewer extends UniComponent<View> {
     static USBWrapper usbWrapper;
     static final String TAG = "IUVCViewer";
-    boolean runing = false;
-
 
     SurfaceView surfaceView = null;
     Paint paint = new Paint();
     SurfaceHolder surfaceHolder = null;
+
+    TextView tv_status = null;
+    TextView tv_info = null;
 
     private UVCCameraProxy mUVCCamera;
 
@@ -70,27 +71,17 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
 
     private int status = STATUS_NONE;
     private int previewSizeIndex = -1;
+    private boolean userStop = false;
+    private boolean showFps = true;
 
     private void setStatus(int status, String detail) {
         if (status != this.status) {
             this.status = status;
-            final Map<String, Object> ret = new HashMap<>();
             Map<String, Object> data = new HashMap<>();
             data.put("status", status);
             data.put("detail", detail);
-            ret.put("detail", data);
-            UniSDKInstance instance = getUniInstance();
-            if (instance != null) {
-                instance.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        fireEvent("onStatusChange", ret);
-                    }
-                });
-            }
-            if (this.status != STATUS_PLAYING) {
-                this.displayText(detail + ":[" + status + "]");
-            }
+            safeFireEvent("onStatusChange", data);
+            this.displayText(detail + "(" + status + ")");
             Log.w(TAG, "status=" + status + " detail=" + detail);
         }
     }
@@ -106,22 +97,34 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
         super(instance, parent, basicComponentData);
     }
 
-//    @Override
-//    protected SurfaceView initComponentHostView(Context context) {
-////        return initTextureView(context);
-//        return initSurfaceView(context);
-//    }
 
     @Override
-    protected RelativeLayout initComponentHostView(Context context) {
+    protected View initComponentHostView(Context context) {
 //        return initTextureView(context);
-        RelativeLayout lay = new RelativeLayout(context);
+        setStatus(STATUS_INITING, "初始化组件");
+        RelativeLayout lay = (RelativeLayout) RelativeLayout.inflate(context, R.layout.uvcpreview, null);
+        Log.e(TAG, "lay " + lay);
+//        RelativeLayout lay = new RelativeLayout(context);
+        SurfaceView surfaceView = lay.findViewById(R.id.sv_preview);
+        tv_status = lay.findViewById(R.id.tv_status);
+        tv_info = lay.findViewById(R.id.tv_info);
+        tv_info.setVisibility(showFps ? View.VISIBLE : View.GONE);
+        Log.e(TAG, "surfaceView " + surfaceView);
+        initSurfaceView(surfaceView);
         return lay;
     }
 
-    private SurfaceView initSurfaceView(Context context) {
-        setStatus(STATUS_INITING, "初始化组件");
-        surfaceView = new SurfaceView(context);
+    @Override
+    protected void onFinishLayout() {
+        super.onFinishLayout();
+        if (tv_info != null)
+            tv_info.setTextSize(Math.max(getLayoutWidth() / 60, 10));
+        if (tv_status != null)
+            tv_status.setTextSize(Math.max(getLayoutWidth() / 50, 10));
+    }
+
+    private SurfaceView initSurfaceView(SurfaceView surfaceView) {
+        this.surfaceView = surfaceView;
         paint = new Paint();
         paint.setColor(Color.RED);
         paint.setStrokeWidth(2);
@@ -130,7 +133,7 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
             @Override
             public void surfaceCreated(@NonNull SurfaceHolder holder) {
                 Log.w(TAG, "surfaceCreated!!!");
-                if (status != STATUS_STOPED)
+                if (!userStop)
                     initUvcPreview();
             }
 
@@ -143,9 +146,29 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
             public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
                 Log.w(TAG, "surfaceDestroyed!!!");
                 closeCamera();
-                runing = false;
             }
         });
+        return surfaceView;
+    }
+
+    private void safeFireEvent(String type, Map<String, Object> detail) {
+        final Map<String, Object> ret = new HashMap<>();
+        ret.put("detail", detail);
+        UniSDKInstance instance = getUniInstance();
+        if (instance != null) {
+            instance.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    fireEvent(type, ret);
+                }
+            });
+        }
+    }
+
+    private SurfaceView initSurfaceView(Context context) {
+        setStatus(STATUS_INITING, "初始化组件");
+        surfaceView = initSurfaceView(new SurfaceView(context));
+
         return surfaceView;
     }
 
@@ -167,6 +190,15 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
             previewSizeIndex = index;
             if (this.status == STATUS_PLAYING)
                 this.restart(null);
+        }
+    }
+
+    @UniComponentProp(name = "showFps")
+    public void setShowFps(boolean show) {
+        Log.w(TAG, "setShowFps: " + show);
+        showFps = show;
+        if (tv_info != null) {
+            tv_info.setVisibility(showFps ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -206,8 +238,27 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
     @UniJSMethod
     public void start(UniJSCallback callback) {
         Log.w(TAG, "start");
+        userStop = false;
+        _start(callback);
+    }
+
+    public void _start(UniJSCallback callback) {
+        Log.w(TAG, "_start");
         if (this.status == STATUS_ERROR || this.status == STATUS_STOPED || this.status == STATUS_NONE)
             this.initUvcPreview();
+        handleReturn("ok", callback);
+    }
+
+    @UniJSMethod
+    public void stop(UniJSCallback callback) {
+        Log.w(TAG, "stop");
+        userStop = true;
+        _stop(callback);
+    }
+
+    public void _stop(UniJSCallback callback) {
+        Log.w(TAG, "_stop");
+        this.closeCamera();
         handleReturn("ok", callback);
     }
 
@@ -217,7 +268,7 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                stop(null);
+                _stop(null);
                 int wait = 30;
                 while (status != STATUS_STOPED && wait > 0) {
                     try {
@@ -227,16 +278,9 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
                     }
                     --wait;
                 }
-                start(callback);
+                _start(callback);
             }
         }).start();
-    }
-
-    @UniJSMethod
-    public void stop(UniJSCallback callback) {
-        Log.w(TAG, "stop");
-        this.closeCamera();
-        handleReturn("ok", callback);
     }
 
     @UniJSMethod
@@ -315,7 +359,6 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
     public void destroy() {
         super.destroy();
         closeCamera();
-        this.runing = false;
         Log.w(TAG, "destroy");
     }
 
@@ -428,20 +471,21 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
 //                                        savePicture(yuv, PICTURE_WIDTH, PICTURE_HEIGHT, mPreviewRotation);
 //                                    }
 //                                    Log.i(TAG, "onFrame");
-//                                    long now = System.currentTimeMillis();
-//                                    if (startTm == 0) {
-//                                        startTm = now;
-//                                        frames = 0;
-//                                    } else {
-//                                        ++frames;
-//                                        if ((now - startTm) > 3000) {
-//                                            double fps = (frames * 1000.0) / (now - startTm);
-//                                            displayInfo("FPS:" + fps);
-//                                            Log.i(TAG, "FPS:" + fps);
-//                                            startTm = now;
-//                                            frames = 0;
-//                                        }
-//                                    }
+                                    long now = System.currentTimeMillis();
+                                    if (startTm == 0) {
+                                        startTm = now;
+                                        frames = 0;
+                                    } else {
+                                        ++frames;
+                                        if ((now - startTm) > 3000) {
+                                            int fps = (int) ((frames * 1000.0) / (now - startTm));
+                                            String info = "" + fps + "fps";
+                                            displayInfo(info);
+                                            Log.i(TAG, info);
+                                            startTm = now;
+                                            frames = 0;
+                                        }
+                                    }
                                 }
                             }, UVCCamera.PIXEL_FORMAT_YUV420SP);
                         }
@@ -451,7 +495,7 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
                             mUVCCamera.closeCamera();
                             setStatus(STATUS_CAM_DETACHED, "摄像头已移除!!!");
                             Log.w(TAG, "onDetached");
-                            stop(null);
+                            _stop(null);
                         }
                     });
 
@@ -491,86 +535,31 @@ public class IUVCViewer extends UniComponent<RelativeLayout> {
         }
     }
 
-    private void displayText(String text) {
-        if (surfaceHolder == null) {
+    private void displayText(final String text) {
+        UniSDKInstance instance = getUniInstance();
+        if (instance == null || tv_status == null) {
             return;
         }
-        synchronized (surfaceHolder) {
-            Canvas canvas = surfaceHolder.lockCanvas();
-            if (canvas != null) {
-                int textSize = Math.max(10, (int) Math.floor(canvas.getWidth() / 30.0));
-                paint.setTextSize(textSize);
-                paint.setStyle(Paint.Style.FILL);
-                Rect rect = new Rect(0, 0, surfaceView.getWidth(), surfaceView.getHeight());
-                paint.setTextAlign(Paint.Align.CENTER);
-
-                Paint.FontMetrics fontMetrics = paint.getFontMetrics();
-                float top = fontMetrics.top;//为基线到字体上边框的距离,即上图中的top
-                float bottom = fontMetrics.bottom;//为基线到字体下边框的距离,即上图中的bottom
-                int baseLineY = (int) (rect.centerY() - top / 2 - bottom / 2);//基线中间点的y轴计算公式
-                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-                canvas.drawText(text, rect.centerX(), baseLineY, paint);
-                surfaceHolder.unlockCanvasAndPost(canvas);
+        instance.runOnUiThread(() -> {
+            if (status == STATUS_PLAYING) {
+                tv_status.setVisibility(View.GONE);
+                Toast.makeText(getContext(), text, Toast.LENGTH_SHORT).show();
+            } else {
+                tv_status.setVisibility(View.VISIBLE);
+                tv_status.setText(text);
             }
-        }
+        });
     }
 
     private void displayInfo(String info) {
-        if (surfaceHolder == null) {
+        UniSDKInstance instance = getUniInstance();
+        if (instance == null || tv_info == null) {
             return;
         }
-        synchronized (surfaceHolder) {
-            Canvas canvas = surfaceHolder.lockCanvas();
-            if (canvas != null) {
-                paint.setTextSize(20);
-                paint.setStyle(Paint.Style.FILL);
-                Rect rect = new Rect(0, 0, surfaceView.getWidth(), surfaceView.getHeight());
-                paint.setTextAlign(Paint.Align.RIGHT);
-
-                Paint.FontMetrics fontMetrics = paint.getFontMetrics();
-                float top = fontMetrics.top;//为基线到字体上边框的距离,即上图中的top
-                float bottom = fontMetrics.bottom;//为基线到字体下边框的距离,即上图中的bottom
-                int baseLineY = (int) (rect.centerY() - top / 2 - bottom / 2);//基线中间点的y轴计算公式
-//                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-                canvas.drawText(info, rect.centerX(), baseLineY, paint);
-                surfaceHolder.unlockCanvasAndPost(canvas);
-            }
-        }
-    }
-
-    private void testRun() {
-        new Thread(() -> {
-            int radius = 0;
-            int offv = 1;
-            runing = true;
-            Log.w(TAG, "IM star!!!");
-            while (runing) {
-                Canvas canvas = surfaceHolder.lockCanvas();
-                if (canvas != null) {
-                    canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-                    canvas.drawCircle(100, 100, radius + 1, paint);
-                    canvas.drawCircle(200, 200, radius + 1, paint);
-                    canvas.drawCircle(300, 300, radius + 1, paint);
-                    canvas.drawCircle(400, 400, radius + 1, paint);
-                    surfaceHolder.unlockCanvasAndPost(canvas);
-                }
-                try {
-                    Thread.sleep(5);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                radius += offv;
-                if (radius < 1) {
-                    radius = 1;
-                    offv = 1;
-                }
-                if (radius > 200) {
-                    radius = 200;
-                    offv = -1;
-                }
-            }
-            Log.w(TAG, "stoped!!!");
-        }).start();
+        instance.runOnUiThread(() -> {
+            tv_info.setVisibility(View.VISIBLE);
+            tv_info.setText(info);
+        });
     }
 }
 

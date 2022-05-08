@@ -384,8 +384,8 @@ public class UVCCamera {
         nativeSetPreviewDisplay(mNativePtr, surface);
     }
 
-    private void checkRet(int ret){
-        if(ret != 0){
+    private void checkRet(int ret) {
+        if (ret != 0) {
             throw new RuntimeException("返回值错误:" + ret);
         }
     }
