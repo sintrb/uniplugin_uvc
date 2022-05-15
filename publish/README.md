@@ -5,7 +5,7 @@
 添加插件之后可以只用使用`sintrb-uvcviewer`组件，该组件有以下方法：
 
 ```js
-let iv = this.$refs.iv;
+let iv = this.$refs.iv; // 先获取组件
 test(callback); // 测试用，无意义
 iv.start(callback); // 开始
 iv.stop(callback); // 停止
@@ -55,7 +55,9 @@ iuvc.getUsbDevices({}, res => {
 });
 ```
 
-具体看例子里面的代码，文件必须写为.nvue。
+反复打开关闭摄像头，有时候会出现状态显示为成功，但实际看不到图像，这种情况下可以先把组件卸载了重新再加载试试（用一个变量结合v-if控制试试）。有时候摄像头正常但一直显示打开失败（类似错误码-99），可以试试重启程序和重新拔插一下摄像头。
+
+更多信息可以看例子里面的代码，文件必须写为.nvue。
 
 ```vue
 <template>
