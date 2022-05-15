@@ -76,17 +76,17 @@ public class IUVCViewer extends UniComponent<View> {
     private long startTm = 0;
     private int frames = 0;
 
-    private final int STATUS_NONE = 0;
-    private final int STATUS_INITING = 1000;
-    private final int STATUS_RETRY = 1100;
-    private final int STATUS_CAM_GETTING = 2000;
-    private final int STATUS_CAM_OPENING = 2100;
-    private final int STATUS_CAM_INITING = 2200;
-    private final int STATUS_CAM_DETACHED = 2300;
-    private final int STATUS_WAIT_PLAY = 5000;
-    private final int STATUS_PLAYING = 5100;
-    private final int STATUS_STOPED = 6000;
-    private final int STATUS_ERROR = -1;
+    private final int STATUS_NONE = 0;  // 初始状态
+    private final int STATUS_INITING = 1000; // 正在初始化中
+    private final int STATUS_RETRY = 1100;  // 正在重试中
+    private final int STATUS_CAM_GETTING = 2000; // 正在获取摄像头
+    private final int STATUS_CAM_OPENING = 2100; // 正在打开摄像头
+    private final int STATUS_CAM_INITING = 2200; // 摄像头初始化中
+    private final int STATUS_CAM_DETACHED = 2300; // 摄像头已移除
+    private final int STATUS_WAIT_PLAY = 5000; // 摄像头打开成，等待预览
+    private final int STATUS_PLAYING = 5100; // 正在预览
+    private final int STATUS_STOPED = 6000; // 预览已停止
+    private final int STATUS_ERROR = -1; // 操作出错
 
     private int status = STATUS_NONE;
     private int previewSizeIndex = 0;
@@ -404,9 +404,9 @@ public class IUVCViewer extends UniComponent<View> {
     }
 
     @UniJSMethod
-    public String test() {
+    public void test(UniJSCallback callback) {
         Log.w(TAG, "test");
-        return "ok Test";
+        handleReturn("test ok", callback);
     }
 
     @UniJSMethod
