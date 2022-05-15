@@ -29,10 +29,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Action1;
-import rx.subscriptions.CompositeSubscription;
+//import rx.Observable;
+//import rx.Subscriber;
+//import rx.functions.Action1;
+//import rx.subscriptions.CompositeSubscription;
 
 /**
  * 描述：相机代理类
@@ -52,7 +52,7 @@ public class UVCCameraProxy implements IUVCCamera {
     private PhotographCallback mPhotographCallback; // 设备上的拍照按钮点击回调
     private PreviewCallback mPreviewCallback; // 预览回调
     private ConnectCallback mConnectCallback; // usb连接回调
-    protected CompositeSubscription mSubscriptions;
+    //    protected CompositeSubscription mSubscriptions;
     private CameraConfig mConfig; // 相机相关配置
     protected float mPreviewRotation; // 相机预览旋转角度
     protected boolean isTakePhoto; // 是否拍照
@@ -62,7 +62,7 @@ public class UVCCameraProxy implements IUVCCamera {
         mContext = context;
         mConfig = new CameraConfig();
         mUsbMonitor = new UsbMonitor(context, mConfig);
-        mSubscriptions = new CompositeSubscription();
+//        mSubscriptions = new CompositeSubscription();
     }
 
     /**
@@ -150,7 +150,7 @@ public class UVCCameraProxy implements IUVCCamera {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        mSubscriptions.clear();
+//        mSubscriptions.clear();
     }
 
     /**
@@ -190,8 +190,6 @@ public class UVCCameraProxy implements IUVCCamera {
 
     /**
      * 设置相机预览控件，这里封装了相关注册注销广播、检测设备、释放资源等操作
-     *
-     * @param surfaceView
      */
     @Override
     public void setPreviewTexture(TextureView textureView) {
@@ -389,28 +387,28 @@ public class UVCCameraProxy implements IUVCCamera {
             return;
         }
         LogUtil.i("savePicture");
-        mSubscriptions.add(Observable.create(new Observable.OnSubscribe<String>() {
-            @Override
-            public void call(Subscriber<? super String> subscriber) {
-                File file = getPictureFile(mPictureName);
-                String path = FileUtil.saveYuv2Jpeg(file, yuv, width, height, rotation);
-                subscriber.onNext(path);
-            }
-        }).compose(RxUtil.<String>io_main()).subscribe(new Action1<String>() {
-            @Override
-            public void call(String path) {
-                if (mPictureCallback != null) {
-                    mPictureCallback.onPictureTaken(path);
-                }
-            }
-        }, new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-                if (mPictureCallback != null) {
-                    mPictureCallback.onPictureTaken(null);
-                }
-            }
-        }));
+//        mSubscriptions.add(Observable.create(new Observable.OnSubscribe<String>() {
+//            @Override
+//            public void call(Subscriber<? super String> subscriber) {
+//                File file = getPictureFile(mPictureName);
+//                String path = FileUtil.saveYuv2Jpeg(file, yuv, width, height, rotation);
+//                subscriber.onNext(path);
+//            }
+//        }).compose(RxUtil.<String>io_main()).subscribe(new Action1<String>() {
+//            @Override
+//            public void call(String path) {
+//                if (mPictureCallback != null) {
+//                    mPictureCallback.onPictureTaken(path);
+//                }
+//            }
+//        }, new Action1<Throwable>() {
+//            @Override
+//            public void call(Throwable throwable) {
+//                if (mPictureCallback != null) {
+//                    mPictureCallback.onPictureTaken(null);
+//                }
+//            }
+//        }));
     }
 
     /**

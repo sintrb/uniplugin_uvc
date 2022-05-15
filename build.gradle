@@ -35,7 +35,7 @@ android {
 }
 
 dependencies {
-    implementation project(path: ':uniplugin-iutils')
+    implementation project(path: ':uniplugin_iutils')
     compileOnly fileTree(dir: 'libs', include: ['*.jar'])
 
     compileOnly fileTree(dir: '../app/libs', include: ['uniapp-v8-release.aar'])

@@ -1,7 +1,6 @@
 package com.sintrb.uniplugin.uvc;
 
 import android.hardware.usb.UsbDevice;
-import android.util.Base64;
 import android.util.Log;
 
 import com.lgh.uvccamera.usb.UsbController;
@@ -21,7 +20,7 @@ import io.dcloud.feature.uniapp.bridge.UniJSCallback;
 import io.dcloud.feature.uniapp.common.UniModule;
 
 public class IUVCModule extends IUtilsModule {
-    String TAG = "IUVCModule";
+    final String TAG = "sintrb-IUVCModule";
     public static int REQUEST_CODE = 2000;
 
 //    static USBWrapper usbWrapper;
