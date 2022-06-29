@@ -1,18 +1,58 @@
-#### 使用说明
-
 ## 注意：Android打包需设置：minSdkVersion>=21、targetSdkVersion>=26；文件必须写为".nvue"。
 
-添加插件之后可以只用使用`sintrb-uvcviewer`组件，该组件有以下方法：
+
+## 写在前面
+
+因为有不少网友反馈没法使用，因此建议先测试你所使用的的摄像头是否是UVC摄像头。测试方法可以下载下面的这个APK安装包，安装到手机上，插入摄像头之后启动APP，看能否正常使用，能正常使用就说明是UVC摄像头，如果不能使用的话也没必要试用该插件了，以免给你造成困扰。
+
+测试APK下载链接: [https://pan.baidu.com/s/18sH3svBykgVEz_uJJSNsfg](https://pan.baidu.com/s/18sH3svBykgVEz_uJJSNsfg) 提取码: f524
+
+
+
+#### 插件添加
+
+0、点击右侧“试用”，选择你对应的工程，将插件添加到项目
+
+1、添加插件之后，在HBuildX中编辑项目的manifest.json文件，打开云端插件，如下图：
+![](https://s3.bmp.ovh/imgs/2022/06/28/f22cc8db991916d9.png)
+
+2、在“App常用其他设置”指定sdk版本，并勾选CPU类型
+
+![](https://i.bmp.ovh/imgs/2022/06/28/0da9e157674c3ceb.png)
+
+3、切换到“源码视图”，在distribute->android->permissions节点下增加以下权限：
+
+```js
+"<uses-permission android:name=\"android.hardware.usb.host\"/>",
+"<uses-permission android:name=\"android.hardware.usb.accessory\"/>",
+```
+
+![](https://i.bmp.ovh/imgs/2022/06/28/d1fca3f8788b6b84.png)
+
+4、制作自定义基座，可以看[DCloud自定义基座详细](https://ask.dcloud.net.cn/article/35115)
+
+![](https://i.bmp.ovh/imgs/2022/06/28/e40111b54e28a82d.png)
+
+![](https://i.bmp.ovh/imgs/2022/06/28/e40111b54e28a82d.png)
+
+
+5、选择自定义基座运行，在真机上进行测试。
+
+
+#### 插件说明
+
+
+添加插件之后可以只用使用`sintrb-uvcviewer`UVC显示组件，只能在.nvue中用，该组件有以下方法：
 
 ```js
 let iv = this.$refs.iv; // 先获取组件
-test(callback); // 测试用，无意义
+iv.test(callback); // 测试用，无意义
 iv.start(callback); // 开始
 iv.stop(callback); // 停止
 iv.restart(callback); // 重启摄像头
 iv.snap(options, callback); // 截图，options无意义，可传{}
 iv.getSupportedPreviewSizes(callback); // 获取当前摄像头支持的预览尺寸
-iv.setPreviewSize(options, callback); // 设置当前摄像头的预览尺寸，options参数类似{index:0}
+iv.setPreviewSize(options, callback); // 设置当前摄像头的预览尺寸，options参数类似{index:0}，其中index参数为getSupportedPreviewSizes方法回调得到的尺寸列表下标序号
 ```
 
 该组件有以下属性：
@@ -20,7 +60,7 @@ iv.setPreviewSize(options, callback); // 设置当前摄像头的预览尺寸，
 * showControlBar: bool 是否显示控制功能
 * rotation: float 旋转角度
 * showFps: bool 是否显示FPS
-* previewSizeIndex: int 预览尺寸的索引，默认为0（一般是最高像素）
+* previewSizeIndex: int 预览尺寸的索引，默认为0（一般就是摄像头支持的最高分辨率）
 * deviceId: int UVC设备ID，即手机分配给USB设备的ID。
 
 该组件有以下事件@onStatusChange，当状态发送变化是通过该事件进行通知，可通过事件对象event.detail.status得到当前状态，状态值定义如下
@@ -40,7 +80,7 @@ private final int STATUS_ERROR = -1; // 操作出错
 ```
 
 
-辅助模块`sintrb-uvcmodule`可用于获取当前设备所连接的USB设备，用法如下：
+辅助模块`sintrb-uvcmodule`可用于获取当前设备所连接的USB设备（可以在.js、.vue、.nvue中用），用法如下：
 
 ```js
 const iuvc = uni.requireNativePlugin("sintrb-uvcmodule");

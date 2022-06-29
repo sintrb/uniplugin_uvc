@@ -1,5 +1,5 @@
 ID="sintrb-uvc"
-VER="1.0.0"
+VER="1.0.6"
 
 BASHPATH=$(cd `dirname $0`; pwd)
 echo $BASHPATH
@@ -14,7 +14,7 @@ echo "build $ID@$VER ..."
 rm -rf tmp/$VER/*
 
 echo "copy demo..."
-cp -r /Users/robin/Downloads/Android-SDK@3.4.6.81299_20220418/UniPlugin-Hello-AS/uniapp示例工程源码/unipluginDemo tmp/$VER/$ID-demo
+cp -r /Users/robin/Downloads/Android-SDK@3.4.6.81299_20220418/UniPlugin-Hello-AS/uniplugin_uvc/publish/uvc-demo tmp/$VER/$ID-demo
 rm -rf tmp/$VER/$ID-demo/unpackage
 rm -rf tmp/$VER/$ID-demo/.hbuilderx
 echo "copy done"
@@ -23,11 +23,16 @@ mkdir tmp/$VER/$ID
 mkdir tmp/$VER/$ID/android
 mkdir tmp/$VER/$ID/android/libs
 
-cp ../build/outputs/aar/* tmp/$VER/$ID/android/
-cp /Users/robin/Downloads/Android-SDK@3.4.6.81299_20220418/UniPlugin-Hello-AS/uniplugin_iutils/build/outputs/aar/* tmp/$VER/$ID/android/
+cp ../build/outputs/aar/*-release.aar tmp/$VER/$ID/android/
+cp /Users/robin/Downloads/Android-SDK@3.4.6.81299_20220418/UniPlugin-Hello-AS/uniplugin_iutils/build/outputs/aar/*-release.aar tmp/$VER/$ID/android/
 cp -rf ../libs/* tmp/$VER/$ID/android/libs/
 cp package.json tmp/$VER/$ID/
 cp README.md tmp/$VER/
+rm -rf tmp/$VER/$ID-demo/unpackage
+rm -rf tmp/$VER/$ID-demo/nativeplugins
+# nativePlugins
+cat tmp/$VER/$ID-demo/manifest.json | sed 's/nativePlugins/xxxxx/' > /tmp/$VER-$ID-demo-manifest.json
+mv /tmp/$VER-$ID-demo-manifest.json tmp/$VER/$ID-demo/manifest.json
 
 cd tmp
 rm -rf ../versions/$ID-$VER-all.zip

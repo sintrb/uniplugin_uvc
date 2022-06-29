@@ -1,0 +1,31 @@
+{
+    "name": "Android原生USB摄像头(UVC)预览截图插件",
+    "id": "sintrb-uvc",
+    "version": "1.0.2",
+    "description": "Android原生USB摄像头(UVC)预览截图插件，手机/平板通过USB-OTG连接UVC摄像头，支持摄像头选择、分辨率设置、旋转、截图等操作",
+    "_dp_type": "nativeplugin",
+    "_dp_nativeplugin":
+    {
+        "android":
+        {
+            "plugins":
+            [
+                {
+                    "type": "module",
+                    "name": "sintrb-uvcmodule",
+                    "class": "com.sintrb.uniplugin.uvc.IUVCModule"
+                },
+                {
+                    "type": "component",
+                    "name": "sintrb-uvcviewer",
+                    "class": "com.sintrb.uniplugin.uvc.IUVCViewer"
+                }
+            ],
+            "integrateType": "aar",
+            "abis": [
+                "armeabi-v7a"
+            ],
+            "minSdkVersion": 21
+        }
+    }
+}
